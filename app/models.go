@@ -1,11 +1,10 @@
 package app
 
-type Poller interface{
+type Poller interface {
+	timeout()
 	GetMessages()
 }
 
-type Receiver interface{
+type Receiver interface {
 	PutMessages()
 }
-
-

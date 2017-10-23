@@ -2,8 +2,9 @@ package receivers
 
 import (
 	"sync"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type RedisReceiver struct {

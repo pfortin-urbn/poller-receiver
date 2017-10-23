@@ -1,29 +1,41 @@
 package mocks
 
 import (
-	"sync"
-	"fmt"
+	"log"
 	"math/rand"
+	"sync"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type MockPoller struct {
-	Wg sync.WaitGroup
-	Cs chan string
+	Wg            *sync.WaitGroup
+	Done          chan bool
+	Cs            chan string
+	PollingPeriod int
+	TimeoutChan   chan bool
 }
 
-func (poller MockPoller)GetMessages() {
-	log.Println("Starting Mock Poller...")
+func (poller MockPoller) timeout() {
+	time.Sleep(time.Duration(poller.PollingPeriod) * time.Millisecond)
+	poller.TimeoutChan <- true
+}
+
+func (poller MockPoller) GetMessages() {
 	defer poller.Wg.Done()
 
-	x := 1
-	for {
-		poller.Cs <- fmt.Sprintf("Test Message %d", x)
-		r := rand.Intn(5)
-		time.Sleep(time.Duration(r) * time.Second)
-		x++
-	}
+	//Set up the polling period timeout goroutine
+	poller.TimeoutChan = make(chan bool, 1)
+	go poller.timeout()
 
+	for {
+		select {
+		case <-poller.Done:
+			log.Println("MockPoller Done received.")
+			return
+		case <-poller.TimeoutChan:
+			poller.Cs <- "Hello"
+			time.Sleep(time.Second * time.Duration(rand.Intn(5))) //Fake random busy time
+			go poller.timeout()
+		}
+	}
 }
